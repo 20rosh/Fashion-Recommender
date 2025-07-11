@@ -102,5 +102,3 @@ if st.session_state['recent']:
     st.image(st.session_state['recent'], width=100)
 
 
-
-#  streamlit run "E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py"
