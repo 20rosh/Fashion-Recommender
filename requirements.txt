@@ -1,6 +1,8 @@
 streamlit
-tensorflow
 numpy
+pandas
+pillow
+tensorflow==2.13.0
 scikit-learn
-Pillow
 tqdm
+
