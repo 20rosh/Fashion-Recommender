@@ -37,7 +37,7 @@ def extract_features(img_path, model):
     return None
 
 # Path to image folder
-images_dir = r"E:\Teach maven AI-ML\projects\FINAL_FASHION\images"
+images_dir = r"images"
 
 # Collect valid image filenames
 all_files = os.listdir(images_dir)
