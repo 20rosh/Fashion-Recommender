@@ -17,7 +17,7 @@ IMAGE_FOLDER = 'images'  # Ensure this exists and has recommendation images
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 EMBEDDINGS_ID = "1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt"
-FILENAMES_ID = "1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW"
+FILENAMES_ID = "1KFBKrcEMrojJW3NMrS-58qXumfZcl6Zh"
 
 st.set_page_config(page_title="Fashion Recommender", layout="wide")
 st.markdown("<h1 style='text-align: center; color: #ff4b4b;'>🧥 Fashion Recommender System 👗</h1>", unsafe_allow_html=True)
@@ -38,10 +38,10 @@ def load_model():
 @st.cache_data
 def load_features():
     download_from_drive(EMBEDDINGS_ID, "embeddings.pkl")
-    download_from_drive(FILENAMES_ID, "filenames.pkl")
+    download_from_drive(FILENAMES_ID, "filenames_clean.pkl")
     try:
         feature_list = np.array(pickle.load(open('embeddings.pkl', 'rb')))
-        filenames = pickle.load(open('filenames.pkl', 'rb'))
+        filenames = pickle.load(open('filenames_clean.pkl', 'rb'))
         return feature_list, filenames
     except Exception as e:
         st.error(f"Failed to load embeddings or filenames: {e}")
@@ -127,7 +127,7 @@ if st.session_state['recent']:
 
 # embeddings --- 1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt
 # filname ----1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW
-
+#clean embeddings --- 1KFBKrcEMrojJW3NMrS-58qXumfZcl6Zh
 
 #   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py'
 
