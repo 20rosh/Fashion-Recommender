@@ -126,12 +126,4 @@ if st.session_state['recent']:
         st.warning("Could not load some recently viewed images.")
 
 # embeddings --- 1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt
-# filname ----1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW
-#clean embeddings --- 1KFBKrcEMrojJW3NMrS-58qXumfZcl6Zh
-
-#   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py'
-
-''' git add Fashion_Page.py requirements.txt runtime.txt .gitignore
-    git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
-    git push origin main
-'''
+#clean filenames --- 1KFBKrcEMrojJW3NMrS-58qXumfZcl6Zh
