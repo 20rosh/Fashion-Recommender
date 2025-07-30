@@ -10,7 +10,9 @@ from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_i
 from sklearn.neighbors import NearestNeighbors
 from numpy.linalg import norm
 
-st.set_page_config(page_title="Fashion Recommender", layout="wide")  
+# --- PAGE SETTINGS ---
+st.set_page_config(page_title="Fashion Recommender", layout="wide")
+st.markdown("<h1 style='text-align: center; color: #ff4b4b;'>🧥 Fashion Recommender System 👗</h1>", unsafe_allow_html=True)
 
 # Ensure upload folder exists
 UPLOAD_FOLDER = 'uploads'
@@ -19,9 +21,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Google Drive file IDs for .pkl files
 EMBEDDINGS_ID = "1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt"
 FILENAMES_ID = "1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW"
-
-# --- PAGE SETTINGS ---
-st.markdown("<h1 style='text-align: center; color: #ff4b4b;'>🧥 Fashion Recommender System 👗</h1>", unsafe_allow_html=True)
 
 # --- FUNCTIONS ---
 
