@@ -41,7 +41,7 @@ with open('filenames.pkl', 'rb') as f:
 full_paths = [os.path.join(IMAGE_DIR, fname) for fname in filenames]
 
 # Upload section
-uploaded_file = st.file_uploader("📤 Upload a clothing image", type=['jpg', 'jpeg', 'png'])
+uploads = st.file_uploader("📤 Upload a clothing image", type=['jpg', 'jpeg', 'png'])
 
 # Helper function to find similar images
 def recommend(image_path, feature_list, full_paths):
@@ -65,7 +65,7 @@ def recommend(image_path, feature_list, full_paths):
     return [full_paths[i] for i in indices]
 
 # Main logic
-if uploaded_file is not None:
+if uploads is not None:
     with open("temp_uploaded_image.jpg", "wb") as f:
         f.write(uploaded_file.getbuffer())
 
@@ -95,7 +95,7 @@ if uploaded_file is not None:
 # embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
 # filename ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
 
-# git add Fashion_Page.py requirements.txt runtime.txt .gitignore
+# git add Fashion_Page.py requirements.txt runtime.txt .gitignore 
  #git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
  #git push origin main
 
