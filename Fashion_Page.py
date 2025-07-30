@@ -12,15 +12,18 @@ from tensorflow.keras.preprocessing import image as keras_image
 from tensorflow.keras.layers import GlobalMaxPooling2D
 from tensorflow.keras.models import Sequential
 
-
 st.set_page_config(page_title="Fashion Recommender", layout="wide")
 st.title("🧥 Fashion Recommender System 👗")
+
+# Constants
+IMAGE_DIR = "images"  # folder where all your images are stored
+os.makedirs(IMAGE_DIR, exist_ok=True)
 
 # Google Drive File IDs (replace with your actual file IDs)
 file_id_embeddings = '1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt'
 file_id_filenames = '1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW'
 
-# Download the files from Google Drive if not present
+# Download files from Google Drive if not present
 if not os.path.exists('embeddings.pkl'):
     gdown.download(f'https://drive.google.com/uc?id={file_id_embeddings}', 'embeddings.pkl', quiet=False)
 
@@ -34,25 +37,23 @@ with open('embeddings.pkl', 'rb') as f:
 with open('filenames.pkl', 'rb') as f:
     filenames = pickle.load(f)
 
+# Convert to full paths (relative to IMAGE_DIR)
+full_paths = [os.path.join(IMAGE_DIR, fname) for fname in filenames]
+
 # Upload section
 uploaded_file = st.file_uploader("📤 Upload a clothing image", type=['jpg', 'jpeg', 'png'])
 
 # Helper function to find similar images
-def recommend(image, feature_list, filenames):
-    from keras.applications.mobilenet_v2 import preprocess_input
-    from keras.preprocessing import image as keras_image
-    from keras.models import load_model
-
-    # Load your feature extractor model (assumed to be MobileNetV2)
+def recommend(image_path, feature_list, full_paths):
     base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
     base_model.trainable = False
 
     model = Sequential([
-    base_model,
-    GlobalMaxPooling2D()
-])
+        base_model,
+        GlobalMaxPooling2D()
+    ])
 
-    img = keras_image.load_img(image, target_size=(224, 224))
+    img = keras_image.load_img(image_path, target_size=(224, 224))
     img_array = keras_image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
     img_array = preprocess_input(img_array)
@@ -61,23 +62,35 @@ def recommend(image, feature_list, filenames):
     similarities = cosine_similarity([features], feature_list)[0]
     indices = np.argsort(similarities)[-5:][::-1]
 
-    return [filenames[i] for i in indices]
+    return [full_paths[i] for i in indices]
 
-# Display recommendations
+# Main logic
 if uploaded_file is not None:
     with open("temp_uploaded_image.jpg", "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    st.image(uploaded_file, caption="📸 Uploaded Image", use_column_width=True)
+    st.image(uploaded_file, caption="📸 Uploaded Image", use_container_width=True)
 
     with st.spinner("🔍 Finding recommendations..."):
-        recommended_files = recommend("temp_uploaded_image.jpg", feature_list, filenames)
+        recommended_files = recommend("temp_uploaded_image.jpg", feature_list, full_paths)
 
     st.subheader("🎯 Top 5 Similar Recommendations")
     cols = st.columns(5)
     for i, file in enumerate(recommended_files):
         with cols[i]:
-            st.image(file, use_column_width=True)
+            if os.path.exists(file):
+                try:
+                    img = Image.open(file)
+                    st.image(img, use_container_width=True)
+                except Exception as e:
+                    st.error(f"⚠️ Couldn't open image {file}: {e}")
+            else:
+                st.error(f"❌ File not found: {file}")
+
+    st.write("🗂 Recommended file paths:")
+    for file in recommended_files:
+        st.code(file)
+
 
 # embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
 # filename ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
