@@ -1,123 +1,96 @@
 import streamlit as st
-import os
-from PIL import Image
 import numpy as np
 import pickle
-import tensorflow as tf
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.layers import GlobalMaxPooling2D
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
+import pandas as pd
+from PIL import Image
+import os
+import tempfile
+import requests
 from sklearn.neighbors import NearestNeighbors
-from numpy.linalg import norm
 
-# --- PAGE SETTINGS ---
 st.set_page_config(page_title="Fashion Recommender", layout="wide")
-st.markdown("<h1 style='text-align: center; color: #ff4b4b;'>🧥 Fashion Recommender System 👗</h1>", unsafe_allow_html=True)
+st.title("🧥 Fashion Recommender System 👗")
 
-# Ensure upload folder exists
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Google Drive file IDs for .pkl files
-EMBEDDINGS_ID = "1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt"
-FILENAMES_ID = "1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW"
-
-# --- FUNCTIONS ---
-
-def download_from_drive(file_id, output_path):
-    if not os.path.exists(output_path):
-        gdown.download(f"https://drive.google.com/uc?id={file_id}", output_path, quiet=False)
-
-# App title
-st.set_page_config(page_title="Fashion Recommender", layout="wide")
-st.markdown("<h1 style='text-align: center; color: #ff4b4b;'>🧥 Fashion Recommender System 👗</h1>", unsafe_allow_html=True)
-
-# Load MobileNetV2
+# ------------------------- Download from Google Drive -------------------------
 @st.cache_resource
-def load_model():
-    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-    base_model.trainable = False
-    model = tf.keras.Sequential([base_model, GlobalMaxPooling2D()])
-    return model
+def download_file_from_gdrive(gdrive_id, dest_path):
+    url = f"https://drive.google.com/uc?id={gdrive_id}"
+    r = requests.get(url, allow_redirects=True)
+    with open(dest_path, 'wb') as f:
+        f.write(r.content)
+    return dest_path
 
-# Load features and filenames
-@st.cache_data
-def load_features():
-    feature_list = np.array(pickle.load(open('embeddings.pkl', 'rb')))
-    filenames = pickle.load(open('filenames.pkl', 'rb'))
-    return feature_list, filenames
+# Google Drive file IDs (you must set your own here)
+EMBEDDINGS_ID = '1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt'
+FILENAMES_ID = '1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW'
 
-model = load_model()
-feature_list, filenames = load_features()
+# Temporary directory to store files
+temp_dir = tempfile.gettempdir()
+embeddings_path = os.path.join(temp_dir, "embeddings.pkl")
+filenames_path = os.path.join(temp_dir, "filenames.pkl")
 
-# Extract feature vector
-def feature_extraction(img_path, model):
-    img = Image.open(img_path).convert('RGB')
-    img = img.resize((224, 224))
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
-    result = model.predict(img_array, verbose=0).flatten()
-    return result / norm(result)
+# Download files if not already cached
+download_file_from_gdrive(EMBEDDINGS_ID, embeddings_path)
+download_file_from_gdrive(FILENAMES_ID, filenames_path)
 
-# Nearest neighbor search
-def recommend(features, feature_list, k=5):
-    neighbors = NearestNeighbors(n_neighbors=k+1, algorithm='brute', metric='euclidean')
-    neighbors.fit(feature_list)
-    distances, indices = neighbors.kneighbors([features])
+# ------------------------- Load Data -------------------------
+with open(embeddings_path, "rb") as f:
+    feature_list = pickle.load(f)
+
+with open(filenames_path, "rb") as f:
+    filenames = pickle.load(f)
+
+# Convert to numpy array
+feature_list = np.array(feature_list)
+
+# ------------------------- Helper Function -------------------------
+def save_uploaded_image(uploaded_file):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+            temp_file.write(uploaded_file.getbuffer())
+            return temp_file.name
+    except Exception as e:
+        st.error(f"Failed to save uploaded image: {e}")
+        return None
+
+def recommend(image_path, feature_list, filenames, top_k=5):
+    model = NearestNeighbors(n_neighbors=top_k, algorithm='brute', metric='euclidean')
+    model.fit(feature_list)
+
+    img = Image.open(image_path).resize((224, 224)).convert('RGB')
+    img_array = np.array(img) / 255.0
+    img_array = img_array.reshape(1, -1)
+
+    distances, indices = model.kneighbors(img_array)
     return indices
 
-# Save uploaded file
-def save_uploaded_file(uploaded_file):
-    file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
-    with open(file_path, 'wb') as f:
-        f.write(uploaded_file.getbuffer())
-    return file_path
+# ------------------------- UI -------------------------
+st.markdown("### Upload an image of a clothing item to get similar suggestions")
 
-# Session state for recently viewed
-if 'recent' not in st.session_state:
-    st.session_state['recent'] = []
+uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
+top_k = st.slider("Number of Recommendations", 1, 10, 5)
 
-# Upload image
-uploaded_file = st.file_uploader("Upload a fashion image (jpg/png)", type=['jpg', 'jpeg', 'png'])
+if uploaded_file:
+    # Show preview
+    image_path = save_uploaded_image(uploaded_file)
+    if image_path:
+        st.image(image_path, caption="Uploaded Image", use_column_width=True)
 
-if uploaded_file is not None:
-    file_path = save_uploaded_file(uploaded_file)
-    st.image(Image.open(file_path), caption="Uploaded Image", use_container_width=True)
+        # Show Recommendations
+        indices = recommend(image_path, feature_list, filenames, top_k=top_k)
 
-    # Add to recently viewed
-    if file_path not in st.session_state['recent']:
-        st.session_state['recent'].append(file_path)
-
-    # Top-K slider
-    top_k = st.slider("How many recommendations to show?", 1, 10, 5)
-
-    with st.spinner("Extracting features and finding recommendations..."):
-        features = feature_extraction(file_path, model)
-        st.write("Uploaded feature shape:", features.shape)
-        st.write("Embedding shape:", feature_list[0].shape)
-
-        if features.shape[0] != feature_list[0].shape[0]:
-            st.error("❌ Model mismatch! Your app is using a different model than used to generate embeddings.")
-        else:
-            indices = recommend(features, feature_list, top_k)
-            st.subheader("🎯 Recommended Items:")
-            cols = st.columns(top_k)
-            for i in range(top_k):
-                rec_img_path = filenames[indices[0][i]]
-                with cols[i]:
-                    st.image(rec_img_path, caption=f"Recommendation {i+1}", use_container_width=True)
-                    with open(rec_img_path, "rb") as f:
-                        st.download_button(f"Download {i+1}", f.read(), file_name=os.path.basename(rec_img_path))
-
-# Recently viewed
-if st.session_state['recent']:
-    st.subheader("🕒 Recently Viewed Images:")
-    st.image(st.session_state['recent'], width=100)
-
+        st.markdown("### 🔍 Recommended Items")
+        cols = st.columns(top_k)
+        for i, col in zip(indices[0], cols):
+            with col:
+                try:
+                    rec_image = Image.open(filenames[i])
+                    st.image(rec_image, use_column_width=True)
+                except Exception as e:
+                    st.error(f"Error loading image {filenames[i]}: {e}")
 
 # embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
-# filname ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
+# filename ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
 
 
 
