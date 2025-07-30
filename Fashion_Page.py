@@ -2,9 +2,14 @@ import streamlit as st
 import numpy as np
 import os
 import pickle
-from PIL import Image
 import gdown
+from PIL import Image
+import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_similarity
+
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
+from tensorflow.keras.preprocessing import image as keras_image
+from tensorflow.keras.layers import GlobalMaxPooling2D
 
 st.set_page_config(page_title="Fashion Recommender", layout="wide")
 st.title("🧥 Fashion Recommender System 👗")
@@ -76,7 +81,7 @@ if uploaded_file is not None:
 # filename ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
 
 # git add Fashion_Page.py requirements.txt runtime.txt .gitignore
- #   git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
- #   git push origin main
+ #git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
+ #git push origin main
 
 #   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py'
