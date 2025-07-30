@@ -10,6 +10,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 from tensorflow.keras.preprocessing import image as keras_image
 from tensorflow.keras.layers import GlobalMaxPooling2D
+from tensorflow.keras.models import Sequential
+
 
 st.set_page_config(page_title="Fashion Recommender", layout="wide")
 st.title("🧥 Fashion Recommender System 👗")
