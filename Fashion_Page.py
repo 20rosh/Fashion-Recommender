@@ -17,7 +17,7 @@ st.title("👗 Fashion Recommender System")
 st.write("Upload a clothing image to get similar fashion recommendations.")
 
 # ---------- STEP 1: Download features if not available ----------
-features_file = "features.pkl"
+features_file = "embeddings.pkl"
 filenames_file = "filenames.pkl"
 
 if not os.path.exists(features_file):
