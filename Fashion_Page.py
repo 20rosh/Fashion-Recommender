@@ -100,7 +100,7 @@ if uploaded_file is not None:
 
                 try:
                     with cols[i]:
-                        st.image(rec_img_path, caption=f"Recommendation {i+1}", use_container_width=True)
+                        st.image(rec_img_path, caption=f"Recommendation {i+1}", use_columns_width=True)
                         with open(rec_img_path, "rb") as f:
                             st.download_button(f"Download {i+1}", f.read(), file_name=os.path.basename(rec_img_path))
                 except:
