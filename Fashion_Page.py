@@ -75,7 +75,7 @@ uploaded_file = st.file_uploader("Upload a fashion image (jpg/png)", type=['jpg'
 
 if uploaded_file is not None:
     file_path = save_uploaded_file(uploaded_file)
-    st.image(Image.open(file_path), caption="Uploaded Image", use_container_width=True)
+    st.image(Image.open(file_path), caption="Uploaded Image", use_columns_width=True)
 
     if file_path not in st.session_state['recent']:
         st.session_state['recent'].append(file_path)
@@ -112,13 +112,13 @@ if st.session_state['recent']:
     st.image(st.session_state['recent'], width=100)
 
 
-# embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
-# filname ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
+# embeddings --- 1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt
+# filname ----1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW
 
 
 #   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py'
 
-"""   git add Fashion_Page.py requirements.txt runtime.txt .gitignore
+''' git add Fashion_Page.py requirements.txt runtime.txt .gitignore
     git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
     git push origin main
-"""
+'''
