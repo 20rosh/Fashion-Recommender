@@ -37,7 +37,13 @@ def recommend(image, feature_list, filenames):
     from keras.models import load_model
 
     # Load your feature extractor model (assumed to be MobileNetV2)
-    model = load_model('mobilenet_model.h5')
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+    base_model.trainable = False
+
+    model = Sequential([
+    base_model,
+    GlobalMaxPooling2D()
+])
 
     img = keras_image.load_img(image, target_size=(224, 224))
     img_array = keras_image.img_to_array(img)
@@ -69,6 +75,8 @@ if uploaded_file is not None:
 # embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
 # filename ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
 
+# git add Fashion_Page.py requirements.txt runtime.txt .gitignore
+ #   git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
+ #   git push origin main
 
-
-
+#   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py'
