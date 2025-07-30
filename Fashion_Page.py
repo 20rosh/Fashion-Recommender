@@ -1,83 +1,129 @@
 import streamlit as st
-import numpy as np
 import os
-import pickle
-import gdown
 from PIL import Image
+import numpy as np
+import pickle
 import tensorflow as tf
-from sklearn.metrics.pairwise import cosine_similarity
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers import GlobalMaxPooling2D
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
+from sklearn.neighbors import NearestNeighbors
+from numpy.linalg import norm
 
-# --- Page config ---
-st.set_page_config(page_title="Fashion Recommender", layout="wide")
-st.title("👗 Fashion Recommender System")
+# Ensure upload folder exists
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Google Drive file download ---
+# Google Drive file IDs for .pkl files
 EMBEDDINGS_ID = "1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt"
 FILENAMES_ID = "1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW"
 
-if not os.path.exists("embeddings.pkl"):
-    gdown.download(f"https://drive.google.com/uc?id={1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt}", "embeddings.pkl", quiet=False)
-if not os.path.exists("filenames.pkl"):
-    gdown.download(f"https://drive.google.com/uc?id={1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW}", "filenames.pkl", quiet=False)
+# --- PAGE SETTINGS ---
+st.set_page_config(page_title="Fashion Recommender", layout="wide")
+st.markdown("<h1 style='text-align: center; color: #ff4b4b;'>🧥 Fashion Recommender System 👗</h1>", unsafe_allow_html=True)
 
-# --- Load features and filenames ---
-with open("embeddings.pkl", "rb") as f:
-    feature_list = pickle.load(f)
+# --- FUNCTIONS ---
 
-with open("filenames.pkl", "rb") as f:
-    filenames = pickle.load(f)
+def download_from_drive(file_id, output_path):
+    if not os.path.exists(output_path):
+        gdown.download(f"https://drive.google.com/uc?id={file_id}", output_path, quiet=False)
 
-# --- Load model ---
-model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-model = tf.keras.Sequential([
-    model,
-    GlobalMaxPooling2D()
-])
+# Load MobileNetV2
+@st.cache_resource
+def load_model():
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+    base_model.trainable = False
+    model = tf.keras.Sequential([base_model, GlobalMaxPooling2D()])
+    return model
 
-# --- Feature extraction ---
-def extract_features(img_path, model):
-    img = image.load_img(img_path, target_size=(224, 224))
+# Load features and filenames
+@st.cache_data
+def load_features():
+    feature_list = np.array(pickle.load(open('embeddings.pkl', 'rb')))
+    filenames = pickle.load(open('filenames.pkl', 'rb'))
+    return feature_list, filenames
+
+model = load_model()
+feature_list, filenames = load_features()
+
+# Extract feature vector
+def feature_extraction(img_path, model):
+    img = Image.open(img_path).convert('RGB')
+    img = img.resize((224, 224))
     img_array = image.img_to_array(img)
-    expanded_img = np.expand_dims(img_array, axis=0)
-    preprocessed_img = preprocess_input(expanded_img)
-    result = model.predict(preprocessed_img, verbose=0).flatten()
-    return result / np.linalg.norm(result)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = preprocess_input(img_array)
+    result = model.predict(img_array, verbose=0).flatten()
+    return result / norm(result)
 
-# --- Recommendation ---
-def recommend(img_path, feature_list, model):
-    features = extract_features(img_path, model)
-    similarities = cosine_similarity([features], feature_list)[0]
-    indices = np.argsort(similarities)[-5:][::-1]
-    return [filenames[i] for i in indices]
+# Nearest neighbor search
+def recommend(features, feature_list, k=5):
+    neighbors = NearestNeighbors(n_neighbors=k+1, algorithm='brute', metric='euclidean')
+    neighbors.fit(feature_list)
+    distances, indices = neighbors.kneighbors([features])
+    return indices
 
-# --- Upload section ---
-uploaded_file = st.file_uploader("📤 Upload an image", type=["jpg", "jpeg", "png"])
+# Save uploaded file
+def save_uploaded_file(uploaded_file):
+    file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
+    with open(file_path, 'wb') as f:
+        f.write(uploaded_file.getbuffer())
+    return file_path
+
+# Session state for recently viewed
+if 'recent' not in st.session_state:
+    st.session_state['recent'] = []
+
+# Upload image
+uploaded_file = st.file_uploader("Upload a fashion image (jpg/png)", type=['jpg', 'jpeg', 'png'])
 
 if uploaded_file is not None:
-    temp_path = "uploaded_image.jpg"
-    with open(temp_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    file_path = save_uploaded_file(uploaded_file)
+    st.image(Image.open(file_path), caption="Uploaded Image", use_container_width=True)
 
-    st.image(temp_path, caption="📸 Uploaded Image", use_container_width=True)
+    # Add to recently viewed
+    if file_path not in st.session_state['recent']:
+        st.session_state['recent'].append(file_path)
 
-    with st.spinner("🔍 Finding recommendations..."):
-        results = recommend(temp_path, feature_list, model)
+    # Top-K slider
+    top_k = st.slider("How many recommendations to show?", 1, 10, 5)
 
-    st.subheader("🛍️ You may also like:")
-    cols = st.columns(5)
-    for i, file_path in enumerate(results):
-        with cols[i]:
-            st.image(file_path, use_container_width=True)
+    with st.spinner("Extracting features and finding recommendations..."):
+        features = feature_extraction(file_path, model)
+        st.write("Uploaded feature shape:", features.shape)
+        st.write("Embedding shape:", feature_list[0].shape)
+
+        if features.shape[0] != feature_list[0].shape[0]:
+            st.error("❌ Model mismatch! Your app is using a different model than used to generate embeddings.")
+        else:
+            indices = recommend(features, feature_list, top_k)
+            st.subheader("🎯 Recommended Items:")
+            cols = st.columns(top_k)
+            for i in range(top_k):
+                rec_img_path = filenames[indices[0][i]]
+                with cols[i]:
+                    st.image(rec_img_path, caption=f"Recommendation {i+1}", use_container_width=True)
+                    with open(rec_img_path, "rb") as f:
+                        st.download_button(f"Download {i+1}", f.read(), file_name=os.path.basename(rec_img_path))
+
+# Recently viewed
+if st.session_state['recent']:
+    st.subheader("🕒 Recently Viewed Images:")
+    st.image(st.session_state['recent'], width=100)
 
 
-# embeddings ---  1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt
-# filename ---- 1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW
+# embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
+# filname ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
 
-# git add Fashion_Page.py requirements.txt runtime.txt .gitignore
- #git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
- #git push origin main
 
-#   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\Fashion_Page.py'
+#   streamlit run 'E:\Teach maven AI-ML\projects\FINAL_FASHION\test.py'
+
+# embeddings ---  https://drive.google.com/file/d/1uxFuOHmjTx3G1z1CbJD7FzzgmbM6fQxt/view?usp=sharing
+# filename ---- https://drive.google.com/file/d/1gytquz6wTp4EP5bQC8vWp9n_XSrzkaGW/view?usp=sharing
+
+"""   git add Fashion_Page.py requirements.txt runtime.txt .gitignore
+    git commit -m "Update Fashion_Page.py with Google Drive integration and recommender system"
+    git push origin main
+
+"""
+#
