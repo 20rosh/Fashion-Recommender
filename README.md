@@ -3,15 +3,14 @@ A content-based fashion recommendation system built with Streamlit, TensorFlow M
 Upload a fashion image and get visually similar recommendations based on deep learning image features.
 
 🚀 Live Demo
-Try the App on Streamlit Cloud: https://your-streamlit-app-link.streamlit.app/
-(Replace this with your actual app link after deployment)
+Try the App on Streamlit Cloud:(https://fashion-recommender-xvvrp3jrpcd4y4aukjp4gk.streamlit.app/)
+
 🎯 Features
 - Upload fashion images (.jpg/.png)
 - Feature extraction using pretrained MobileNetV2
 - Similar item search using k-Nearest Neighbors
 - Adjustable Top-K slider for number of recommendations
 - Download recommended images
-- Recently viewed history with thumbnails
 
 🛠️ Tech Stack
 - Frontend: Streamlit
@@ -46,18 +45,10 @@ streamlit run Fashion_Page.py
 
 Visit: http://localhost:8501
 
-☁️ How to Deploy on Streamlit Cloud
-1. Push your project to GitHub
-2. Go to https://streamlit.io/cloud
-3. Create a new app from your repo and select Fashion_Page.py
-4. Click Deploy
-
 📸 Screenshots
 (Add screenshots of the upload and recommendation sections here)
 👩‍💻 Author
 Roshani Singh
-Email: roshanisingh2005@example.com
-GitHub: https://github.com/your-username
+Email: roshanisingh2005@gmail.com
+GitHub:  (https://github.com/20rosh)
 
-📄 License
-This project is licensed under the MIT License.
